@@ -1,5 +1,6 @@
 # Dependecies
 import sys
+import time
 from datetime import datetime
 from tqdm import tqdm
 import requests
@@ -7,17 +8,18 @@ import pandas as pd
 
 # Own Modules
 from keygen import Keygen
-
-import logging
-logging.basicConfig(filename='opendata.log', format='%(asctime)s %(message)s')
+sys.path.append('../')
+from log_handler import root_logger
 
 class OpenData():
     def __init__(self, idema=None):
+        root_logger.info(f'OpenData({idema})')  # LOG - INFO
         self.key = Keygen().get_key()
         self.url = 'https://opendata.aemet.es/opendata/api/'
         if idema: self.idema = idema
 
     def set_idema(self, idema):
+        root_logger.info(f'set_idema({idema})')  # LOG - INFO
         self.idema = idema
 
     def read_api(self, url):
@@ -25,21 +27,26 @@ class OpenData():
         headers = {'cache-control': 'no-cache'}
 
         response = requests.request("GET", url, headers=headers, params=query)
-
+        root_logger.debug(f"""get_api({url}) - {response.status_code}
+                  {str(response.content)}""")  # LOG - DEBUG
         if response.status_code == 200:
-            logging.info(f'read_api({url}) {response.status_code}')
             return response.json()
     
+    #-------------------------------------
+    #  GETTERS
+    #-------------------------------------
+    # - stations -
     def get_stations(self):
         url = self.url + 'valores/climatologicos/inventarioestaciones/todasestaciones'
 
         response = self.read_api(url)
-
+        root_logger.debug(f'get_stations() - {response["estado"]}')  # LOG - DEBUG
         if response:
             stations = self.read_api(response['datos'])
             return pd.DataFrame(stations)
-
-    def read_year(self, year, legend=False):
+        
+    # - Daily data YEAR -
+    def get_year(self, year, legend=False):
         idema = '6156X'  # self.idema
         init = f'{year}-01-01T00:00:00UTC'
         end = f'{year}-12-31T23:59:59UTC'
@@ -47,7 +54,7 @@ class OpenData():
               f'{init}/fechafin/{end}/estacion/{idema}'
 
         response = self.read_api(url)
-
+        root_logger.debug(f'get_year({year}) - {response["estado"]}')  # LOG - DEBUG
         if response:
             data = pd.DataFrame(self.read_api(response['datos']))
             if legend:
@@ -56,6 +63,8 @@ class OpenData():
             return data
     
     def get_data_range(self, init_year, end_year):
+        root_logger.info(f'get_data_range({init_year}, {end_year})')  # LOG - INFO
+
         col_names = ['fecha','indicativo','nombre','provincia','altitud','tmed',
                      'prec','tmin','horatmin','tmax','horatmax','dir','velmedia',
                      'racha','horaracha','presMax','horaPresMax','presMin',
@@ -63,6 +72,20 @@ class OpenData():
         data = pd.DataFrame(columns=col_names)
 
         for year in tqdm(range(init_year,end_year+1)):
-            data = pd.concat([data, self.read_year(year)]).reset_index(drop=True)
+            data = pd.concat([data, self.get_year(year)]).reset_index(drop=True)
         
+        return data
+
+    #-------------------------------------
+    #  READ FILES
+    #-------------------------------------
+
+    def read_csv(self, path):
+        root_logger.info(f'read_csv({path})')  # LOG - INFO
+        data = pd.read_csv(path)
+
+        data['fecha'] = data['fecha'].apply(
+            lambda x: datetime.strptime(x, '%Y-%m-%d').date())
+        data = data.set_index('fecha')
+
         return data
