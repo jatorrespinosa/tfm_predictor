@@ -1,1 +1,12 @@
 TfmUtils/keygen.py
+__pycache__/apik.cpython-38.pyc
+__pycache__/log_handler.cpython-38.pyc
+log/root/ root
+TfmUtils/__pycache__/keygen.cpython-38.pyc
+TfmUtils/__pycache__/opendata.cpython-38.pyc
+
+# Extensions
+*.ipynb
+*.csv
+
+**/__pycache__/
