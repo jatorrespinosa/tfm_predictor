@@ -6,13 +6,15 @@ from tqdm import tqdm
 import requests
 import pandas as pd
 
+import streamlit as st
+
 # Own Modules
-from keygen import Keygen
 sys.path.append('../')
+from utils.keygen import Keygen
 from log_handler import root_logger
 
 class OpenData():
-    def __init__(self, idema=None):
+    def __init__(self, idema='6156X'):
         root_logger.info(f'OpenData({idema})')  # LOG - INFO
         self.key = Keygen().get_key()
         self.url = 'https://opendata.aemet.es/opendata/api/'
@@ -21,7 +23,6 @@ class OpenData():
     def set_idema(self, idema):
         root_logger.info(f'set_idema({idema})')  # LOG - INFO
         self.idema = idema
-
     def read_api(self, url):
         query = {'api_key': self.key}
         headers = {'cache-control': 'no-cache'}
@@ -36,31 +37,33 @@ class OpenData():
     #  GETTERS
     #-------------------------------------
     # - stations -
-    def get_stations(self):
-        url = self.url + 'valores/climatologicos/inventarioestaciones/todasestaciones'
+    @st.cache_resource
+    def get_stations(_self):
+        url = _self.url + 'valores/climatologicos/inventarioestaciones/todasestaciones'
 
-        response = self.read_api(url)
+        response = _self.read_api(url)
         root_logger.debug(f'get_stations() - {response["estado"]}')  # LOG - DEBUG
         if response:
-            stations = self.read_api(response['datos'])
+            stations = _self.read_api(response['datos'])
             return pd.DataFrame(stations)
         
     # - Daily data YEAR -
     def get_year(self, year, legend=False):
-        idema = '6156X'  # self.idema
         init = f'{year}-01-01T00:00:00UTC'
         end = f'{year}-12-31T23:59:59UTC'
         url = self.url + 'valores/climatologicos/diarios/datos/fechaini/' +\
-              f'{init}/fechafin/{end}/estacion/{idema}'
+              f'{init}/fechafin/{end}/estacion/{self.idema}'
 
         response = self.read_api(url)
         root_logger.debug(f'get_year({year}) - {response["estado"]}')  # LOG - DEBUG
-        if response:
+        if response['estado'] == 200:
             data = pd.DataFrame(self.read_api(response['datos']))
             if legend:
                 meta = pd.DataFrame(self.read_api(response['metadatos'])['campos'])
                 return data , meta
             return data
+        else:
+            return response['descripcion']
     
     def get_data_range(self, init_year, end_year):
         root_logger.info(f'get_data_range({init_year}, {end_year})')  # LOG - INFO
