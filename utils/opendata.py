@@ -23,6 +23,29 @@ class OpenData():
     def set_idema(self, idema):
         root_logger.info(f'set_idema({idema})')  # LOG - INFO
         self.idema = idema
+
+    def __format_data(self, df):
+        df = df[['fecha','tmed','tmin','tmax','dir','velmedia',
+                 'racha','presMin','presMax','prec']]
+        # fecha = pd.to_datetime(df['fecha'], format='%Y-%m-%d')
+        # df.loc[:,'fecha'] = fecha.copy()
+        df = df.astype({'fecha':'datetime64[ns]'})
+        df.replace({'Ip': '0.09','Acum':'999'}, inplace=True)
+        
+        df = df.set_index('fecha').astype(str)\
+            .applymap(lambda x: x.replace(',','.')).astype(float)
+        try:
+            df['rain'] = df['prec'].apply(lambda x: 0 if x == 0 else 1)
+        except Exception as e:
+            root_logger.error(str(e))
+
+        df.loc[df['dir'] == 88, 'dir'] = pd.NA
+        df.loc[df['prec'].isna(),'rain'] = pd.NA
+
+        return df
+
+
+
     def read_api(self, url):
         query = {'api_key': self.key}
         headers = {'cache-control': 'no-cache'}
@@ -48,7 +71,7 @@ class OpenData():
             return pd.DataFrame(stations)
         
     # - Daily data YEAR -
-    def get_year(self, year, legend=False):
+    def get_year(self, year, source=False, legend=False):
         init = f'{year}-01-01T00:00:00UTC'
         end = f'{year}-12-31T23:59:59UTC'
         url = self.url + 'valores/climatologicos/diarios/datos/fechaini/' +\
@@ -61,7 +84,7 @@ class OpenData():
             if legend:
                 meta = pd.DataFrame(self.read_api(response['metadatos'])['campos'])
                 return data , meta
-            return data
+            return data if source else self.__format_data(data)
         else:
             return response['descripcion']
     
@@ -75,7 +98,7 @@ class OpenData():
         data = pd.DataFrame(columns=col_names)
 
         for year in tqdm(range(init_year,end_year+1)):
-            data = pd.concat([data, self.get_year(year)]).reset_index(drop=True)
+            data = pd.concat([data, self.get_year(year, source=True)], ignore_index=True)
         
         return data
 
