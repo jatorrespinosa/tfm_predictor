@@ -23,7 +23,7 @@ class Preprocessor():
     def __init__(self):
         # getters ?!
         # Inplace ?!
-        self.dataset = OpenData().read_csv('data/data-01-22.csv')  # ../
+        self.dataset = OpenData().read_csv('../data/data-01-22.csv')  # ../
         
         # self.data_prec = OpenData().read_csv('./data/data-01-22-prec.csv')
         # self.data_rain = OpenData().read_csv('./data/data-01-22-rain.csv')
