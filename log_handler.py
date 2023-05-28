@@ -2,7 +2,9 @@ import logging
 import logging.handlers
 import os
 
+#level = logging.DEBUG
 level = logging.INFO
+
 formatter = logging.Formatter('%(asctime)s [%(levelname)s]: %(name)s: %(message)s')
 
 root_path = os.path.dirname(os.path.abspath(__file__)) + '\log\\root\\'
