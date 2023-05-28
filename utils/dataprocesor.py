@@ -21,18 +21,25 @@ from utils.opendata import OpenData
 class Preprocessor():
 
     def __init__(self):
-        # getters ?!
-        # Inplace ?!
+        """Preprocessor constructor.
+        """
+        root_logger.info('Preprocessor()')  # LOG - INFO
         self.dataset = OpenData().read_csv('data/data-01-22.csv')  # ../
-        
-        # self.data_prec = OpenData().read_csv('./data/data-01-22-prec.csv')
-        # self.data_rain = OpenData().read_csv('./data/data-01-22-rain.csv')
             
 
     def Xy(self, data='', verbose=False):
+        """Split dataset in X and y.
+
+        :param data: Dataset, if empty it'll uses its own data, defaults to ''
+        :type data: str, optional
+        :param verbose: If True return X and y, defaults to False
+        :type verbose: bool, optional
+        :return: if verbose is true return X and y.
+        :rtype: dict tuple, Dataframes in dicts.
+        """
         root_logger.info(f'Xy({data}, verbose={verbose})')  # LOG - INFO
         data = self.dataset if isinstance(data, str) else data
-        data.dropna(thresh=6, inplace=True)
+        data.dropna(thresh=6, inplace=True)  # three or fewer nulls
 
         # If not exists, Split X and Split y (prec & rain)
         if not (hasattr(self, 'X') and hasattr(self, 'y')):
@@ -46,7 +53,15 @@ class Preprocessor():
 
             if verbose: return self.X, self.y
 
+
     def impute_data(self, data):
+        """Imputes values for rows with three or fewer nulls.
+
+        :param data: X
+        :type data: DataFrame
+        :return: imputed data
+        :rtype: DataFrame
+        """
         root_logger.debug(f'impute_data({data})')  # LOG - DEBUG
         # Drop rows with more than three missing data
         new_data = data  # self.dataset if isinstance(dataset, str) else data
@@ -64,6 +79,16 @@ class Preprocessor():
 
 
     def scale_data(self, data, robust=False):
+        """Scales values with robust or minmax scaler.
+
+        :param data: X
+        :type data: DataFrame
+        :param robust: If true select RobustScaler else MinMaxScaler, defaults to False
+        :type robust: bool, optional
+        :return: Scaled data
+        :rtype: DataFrame
+        """
+        root_logger.debug(f'scale_data({data}, robust={robust})')  # LOG - DEBUG
         # If not exists scaler: instance and fit it
         if not hasattr(self, 'scaler'):
             if robust:  # Select between Robust or MinMax Scaler
@@ -79,7 +104,7 @@ class Preprocessor():
         
         return sc_X  # return dataframe
 
-    def select_attr(self, X, attr, **kagrs):
+    def select_attr(self, X, attr, **kwagrs):
         """attr selects between 'PCA' or 'Kbest'. X will be reduced.
         Will need **kwags:
         - For PCA: n_components.
@@ -94,19 +119,22 @@ class Preprocessor():
         :rtype: tuple
         """
         if attr == 'PCA':
-            pca = PCA(**kagrs)  # n_components=
+            pca = PCA(**kwagrs)  # n_components=
             X_r = pca.fit(X).transform(X)
             ratio = pca.explained_variance_ratio_
         else:
             # y_train
             # score_func: f_classif, chi2, mutual_info_classif,
             # k='all'
+            # score_func transforms str to value 
             mapper = {'f_classif': f_classif, 'chi2': chi2,
                       'mutual_info_classif':mutual_info_classif}
-            y = kagrs['y']
-            kagrs.pop('y')
-            kagrs['score_func'] = mapper[kagrs['score_func']]
-            filt = SelectKBest(**kagrs) 
+            kwagrs['score_func'] = mapper[kwagrs['score_func']]
+            # Catch y
+            y = kwagrs['y']
+            kwagrs.pop('y')
+            # - KBest -
+            filt = SelectKBest(**kwagrs) 
             X_r = filt.fit_transform(X, y)
             ratio = filt.scores_
         
@@ -114,6 +142,16 @@ class Preprocessor():
 
     
     def undersampling(self, X, y):
+        """For classifications models, undersamplig must be done, Rain class values.
+
+        :param X: X
+        :type X: DataFrame
+        :param y: rain class series
+        :type y: Series
+        :return: Returns undersampled data X and y
+        :rtype: DataFrame tuple
+        """
+        root_logger.debug(f'undersampling({X}, {y})')  # LOG - DEBUG
         # For rain data - Undersampling
         rus = RandomUnderSampler()  # random_state=random.seed(time.time())
         X_und, y_und = rus.fit_resample(X, y)
@@ -122,23 +160,45 @@ class Preprocessor():
     
 
     def split_data(self, X, y, under=False, verbose=False):
-        if under:
-            X, y = self.undersampling(X, y)
+        """Splits data in train and test.
+
+        :param X: X
+        :type X: DataFrame
+        :param y: y
+        :type y: Series
+        :param under: Enable undersampling, defaults to False
+        :type under: bool, optional
+        :param verbose: If true returns splitted data, defaults to False
+        :type verbose: bool, optional
+        :return: If verbose, splitted data. Dict for each class with every data.
+        :rtype: dict of dict.
+        """
+        root_logger.debug(f'split_data({X}, {y}, under={under}, verbose={verbose})')  # LOG - DEBUG
 
         if not hasattr(self, 'splited'):
+            if under:  # Undersampling once time only
+                X, y = self.undersampling(X, y)
             self.splited = {}
         X_train, X_test, y_train, y_test = \
             train_test_split(X, y)
         
-        self.splited[y.name].update({'X_train': X_train,
-                                   'X_test': X_test,
-                                   'y_train': y_train,
-                                   'y_test': y_test})
+        self.splited.update({y.name:{'X_train': X_train,
+                                     'X_test': X_test,
+                                     'y_train': y_train,
+                                     'y_test': y_test}})
 
         if verbose: return self.splited
 
 
-    def preprocess_data(self):
+    def preprocess_data(self, verbose=False):  #  select=True,
+        """Preprocess a dataset, impute, scale and split in train and test.
+
+        :param verbose: If true, return scaled data, defaults to False
+        :type verbose: bool, optional
+        :return: scaled prec and rain data
+        :rtype: DataFrame tuple
+        """
+        root_logger.info(f'preprocess_data(verbose={verbose})')  # LOG - INFO
         # X, y
         self.Xy()
         # Imputer
@@ -148,11 +208,12 @@ class Preprocessor():
         prec_sc = self.scale_data(prec_impute)
         rain_sc = self.scale_data(rain_impute)
 
-        # Select attr Kbest?
-            # select_attr(self, X, attr, **kagrs)
-
+        # Select attr Kbest
+        # if select:
+        #     self.select_attr(self, X, attr, **kagrs)
+        
         # Splitter
-        # self.split_data(prec_sc, self.y['prec'])
-        # self.split_data(rain_sc, self.y['rain'])
+        self.split_data(prec_sc, self.y['prec'])
+        self.split_data(rain_sc, self.y['rain'], under=True)
 
-        return prec_sc, rain_sc
+        if verbose: return prec_sc, rain_sc 
