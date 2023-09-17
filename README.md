@@ -9,6 +9,7 @@ This app runs with streamlit and the machine learning section uses scikit-learn.
 Developed by Torres Espinosa, Jose Antonio.
 
 Deploy with the sentence: **streamlit run app/home.py**
+
 Needs the 'utils/keygen.py' file to make the correct requests.
 
 
