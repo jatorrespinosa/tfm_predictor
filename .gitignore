@@ -5,6 +5,8 @@ utils/keygen.py
 *.ipynb
 !1-data_api.ipynb
 !2-data_analysis.ipynb
+!3-classification_models.ipynb
+!4-regression_models.ipynb
 log/
 
 # Byte-compiled / optimized / DLL files
