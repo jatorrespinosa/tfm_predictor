@@ -253,14 +253,14 @@ class Processor(Preprocessor):
         # Classification Models
     # ------------------------------------
     def knn_clf_model(self):
-        """KNeighborsClassifier with n_neighbors=3 and euclidean metric.
+        """KNeighborsClassifier with n_neighbors=5 and euclidean metric.
 
         :return: confusion_matrix and roc_auc_score results from predict_clf(model)
         :rtype: dict
         """
         root_logger.info('knn_clf_model()')  # LOG - INFO
         if not hasattr(self, 'knn_clf'):  # If not exists knn_clf: instance and fit it
-            self.knn_clf = KNeighborsClassifier(n_neighbors=3, metric='euclidean')
+            self.knn_clf = KNeighborsClassifier(n_neighbors=5, metric='euclidean')
             self.knn_clf.fit(self.splited['rain']['X_train'],
                              self.splited['rain']['y_train'])
         
@@ -268,14 +268,14 @@ class Processor(Preprocessor):
     
 
     def randomforest_clf(self):
-        """RandomForestClassifier with max_depth=10, ccp_alpha=.0001 and log_loss criterion.
+        """RandomForestClassifier with max_depth=13, ccp_alpha=0 and log_loss criterion.
 
         :return: confusion_matrix and roc_auc_score results from predict_clf(model)
         :rtype: dict
         """
         root_logger.info('randomforest_clf()')  # LOG - INFO
         if not hasattr(self, 'rf_clf'):  # If not exists rf_clf: instance and fit it
-            self.rf_clf = RandomForestClassifier(max_depth=10, ccp_alpha=.0001,
+            self.rf_clf = RandomForestClassifier(max_depth=13, ccp_alpha=0,
                                                  criterion='log_loss')
             self.rf_clf.fit(self.splited['rain']['X_train'],
                             self.splited['rain']['y_train'])
@@ -284,14 +284,14 @@ class Processor(Preprocessor):
 
 
     def decisiontree_clf(self):
-        """DecisionTreeClassifier with max_depth=17, ccp_alpha=.001 and log_loss criterion.
+        """DecisionTreeClassifier with max_depth=16, ccp_alpha=.0001 and log_loss criterion.
 
         :return: confusion_matrix and roc_auc_score results from predict_clf(model)
         :rtype: dict
         """
         root_logger.info('decisiontree_clf()')  # LOG - INFO
         if not hasattr(self, 'dt_clf'):  # If not exists dt_clf: instance and fit it
-            self.dt_clf = DecisionTreeClassifier(max_depth=17, ccp_alpha=.001,
+            self.dt_clf = DecisionTreeClassifier(max_depth=16, ccp_alpha=.0001,
                                                  criterion='log_loss')
             self.dt_clf.fit(self.splited['rain']['X_train'],
                             self.splited['rain']['y_train'])
@@ -300,7 +300,7 @@ class Processor(Preprocessor):
 
 
     def bagging_clf(self):
-        """BaggingClassifier with n_estimators=125, max_samples=.7 and base_estimator from decisiontree_clf().
+        """BaggingClassifier with n_estimators=60, max_samples=.7 and base_estimator from decisiontree_clf().
 
         :return: confusion_matrix and roc_auc_score results from predict_clf(model)
         :rtype: dict
@@ -309,7 +309,7 @@ class Processor(Preprocessor):
         if not hasattr(self, 'bg_clf'):  # If not exists bg_clf: instance and fit it
             if not hasattr(self, 'dt_clf'): self.decisiontree_clf()  # If not exists dt_clf: creates it
             self.bg_clf = BaggingClassifier(base_estimator=self.dt_clf,
-                                            n_estimators=125, max_samples=.7)
+                                            n_estimators=60, max_samples=.7)
             self.bg_clf.fit(self.splited['rain']['X_train'],
                             self.splited['rain']['y_train'])
         
@@ -320,54 +320,54 @@ class Processor(Preprocessor):
         # Regression Models
     # ------------------------------------
     def knn_reg_model(self):
-        """KNeighborsRegressor with n_neighbors=3 and euclidean metric.
+        """KNeighborsRegressor with n_neighbors=10 and euclidean metric.
 
         :return: rmse results from predict_reg(model)
         :rtype: dict
         """
         root_logger.info('knn_reg_model()')  # LOG - INFO
         if not hasattr(self, 'knn_reg'):  # If not exists knn_reg: instance and fit it
-            self.knn_reg = KNeighborsRegressor(n_neighbors=3, metric='euclidean')
-            self.knn_reg.fit(self.splited['rain']['X_train'],
-                            self.splited['rain']['y_train'])
+            self.knn_reg = KNeighborsRegressor(n_neighbors=10, metric='euclidean')
+            self.knn_reg.fit(self.splited['prec']['X_train'],
+                            self.splited['prec']['y_train'])
         
         return self.predict_reg(self.knn_reg)
 
 
     def randomforest_reg(self):
-        """RandomForestRegressor with max_depth=10, ccp_alpha=.0001 and squared_error criterion.
+        """RandomForestRegressor with max_depth=30, ccp_alpha=.0001 and squared_error criterion.
 
         :return: rmse results from predict_reg(model)
         :rtype: dict
         """
         root_logger.info('randomforest_reg()')  # LOG - INFO
         if not hasattr(self, 'rf_reg'):  # If not exists rf_reg: instance and fit it
-            self.rf_reg = RandomForestRegressor(max_depth=10, ccp_alpha=.0001,
+            self.rf_reg = RandomForestRegressor(max_depth=30, ccp_alpha=.0001,
                                                 criterion='squared_error')
-            self.rf_reg.fit(self.splited['rain']['X_train'],
-                            self.splited['rain']['y_train'])
+            self.rf_reg.fit(self.splited['prec']['X_train'],
+                            self.splited['prec']['y_train'])
 
         return self.predict_reg(self.rf_reg)
 
 
     def decisiontree_reg(self):
-        """DecisionTreeRegressor with max_depth=27, ccp_alpha=.001 and squared_error criterion.
+        """DecisionTreeRegressor with max_depth=16, ccp_alpha=.0001 and squared_error criterion.
 
         :return: rmse results from predict_reg(model)
         :rtype: dict
         """
         root_logger.info('decisiontree_reg()')  # LOG - INFO
         if not hasattr(self, 'dt_reg'):  # If not exists dt_reg: instance and fit it
-            self.dt_reg = DecisionTreeRegressor(max_depth=27, ccp_alpha=.001,
+            self.dt_reg = DecisionTreeRegressor(max_depth=16, ccp_alpha=.0001,
                                                 criterion='squared_error')
-            self.dt_reg.fit(self.splited['rain']['X_train'],
-                            self.splited['rain']['y_train'])
+            self.dt_reg.fit(self.splited['prec']['X_train'],
+                            self.splited['prec']['y_train'])
 
         return self.predict_reg(self.dt_reg)
 
 
     def boosting_reg(self):
-        """AdaBoostRegressor with n_estimators=85 and base_estimator from decisiontree_reg().
+        """AdaBoostRegressor with n_estimators=155 and base_estimator from decisiontree_reg().
 
         :return: rmse results from predict_reg(model)
         :rtype: dict
@@ -376,9 +376,9 @@ class Processor(Preprocessor):
         if not hasattr(self, 'bs_reg'):  # If not exists bs_reg: instance and fit it
             if not hasattr(self, 'dt_reg'): self.decisiontree_reg()  # If not exists dt_reg: creates it
             self.bs_reg = AdaBoostRegressor(base_estimator=self.dt_reg,
-                                            n_estimators=85)
-            self.bs_reg.fit(self.splited['rain']['X_train'],
-                            self.splited['rain']['y_train'])
+                                            n_estimators=155)
+            self.bs_reg.fit(self.splited['prec']['X_train'],
+                            self.splited['prec']['y_train'])
 
         return self.predict_reg(self.bs_reg)
     
@@ -426,15 +426,22 @@ class Processor(Preprocessor):
         """
         root_logger.info(f'predict_reg({model})')  # LOG - INFO
         # Predictions
-        y_pred = model.predict(self.splited['rain']['X_test'])
-        y_pred1 = model.predict(self.splited['rain']['X_train'])
+        y_pred = model.predict(self.splited['prec']['X_test'])
+        y_pred1 = model.predict(self.splited['prec']['X_train'])
         y_pred2 = model.predict(self.rain_sc)
-        # RMSE
-        results = {'rmse':{
-            'test':sqrt(mean_squared_error(self.splited['rain']['y_test'], y_pred)),
-            'train':sqrt(mean_squared_error(self.splited['rain']['y_train'], y_pred1)),
-            'all':sqrt(mean_squared_error(self.y['rain'], y_pred2))
-        }}
+        # RMSE and predictions
+        results = {
+            'rmse':{
+                'test':sqrt(mean_squared_error(self.splited['prec']['y_test'],
+                                               y_pred)),
+                'train':sqrt(mean_squared_error(self.splited['prec']['y_train'],
+                                                y_pred1)),
+                'all':sqrt(mean_squared_error(self.y['prec'], y_pred2))},
+            'predictions':{
+                'test': y_pred,
+                'train': y_pred1,
+                'all': y_pred2},
+        }
         
         return results
     
