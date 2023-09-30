@@ -1,12 +1,16 @@
+# ----------------------------------------------------------------------------
+#   File to interact with Open Data Api, provides the data for the app.
+#   Torres Espinosa, Jose Antonio.
+# ----------------------------------------------------------------------------
+
 # Dependecies
 import sys
-import time
 from datetime import datetime
 from tqdm import tqdm
 import requests
 import pandas as pd
 
-import streamlit as st
+# import streamlit as st
 
 # Own Modules
 sys.path.append('../')
@@ -21,8 +25,8 @@ class OpenData():
         :type idema: str, optional
         """
         root_logger.info(f'OpenData({idema})')  # LOG - INFO
-        self.key = Keygen().get_key()
-        self.url = 'https://opendata.aemet.es/opendata/api/'
+        self.key = Keygen().get_key()  # api key
+        self.url = 'https://opendata.aemet.es/opendata/api/'  # url base
         if idema: self.idema = idema
 
 
@@ -125,7 +129,7 @@ class OpenData():
         url = self.url + 'valores/climatologicos/diarios/datos/fechaini/' +\
               f'{init}/fechafin/{end}/estacion/{self.idema}'
 
-        response = self.read_api(url)
+        response = self.read_api(url)  # Data request
         root_logger.debug(f'get_year({year}) - {response["estado"]}')  # LOG - DEBUG
         if response['estado'] == 200:
             data = pd.DataFrame(self.read_api(response['datos']))
@@ -134,7 +138,7 @@ class OpenData():
                 return data , meta
             return data if source else self.__format_data(data)
         else:
-            return response['descripcion']
+            return response['descripcion']  # If 'estado' != 200. Failed request.
     
     def get_data_range(self, init_year, end_year):
         """Gets daily data of a year range from select station (set_idema function).
@@ -152,10 +156,11 @@ class OpenData():
                      'prec','tmin','horatmin','tmax','horatmax','dir','velmedia',
                      'racha','horaracha','presMax','horaPresMax','presMin',
                      'horaPresMin']
-        data = pd.DataFrame(columns=col_names)  # self.get_year(year, source=True)?
-        # not_found = []    # TRY?? no data years cnt probar que error es!!
-        for year in tqdm(range(init_year,end_year+1)):
-            data = pd.concat([data, self.get_year(year, source=True)], ignore_index=True)
+        data = pd.DataFrame(columns=col_names)
+
+        for year in tqdm(range(init_year,end_year+1)):  # Years loop
+            data = pd.concat([data, self.get_year(year, source=True)],
+                             ignore_index=True)  # Concat all years data
         
         return self.__format_data(data)
 
@@ -175,7 +180,7 @@ class OpenData():
         try:
             data = pd.read_csv(path)
             
-            data['fecha'] = data['fecha'].apply(
+            data['fecha'] = data['fecha'].apply(  # Transform date
                 lambda x: datetime.strptime(x, '%Y-%m-%d').date())
             data = data.set_index('fecha')
 
